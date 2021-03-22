@@ -1,0 +1,5 @@
+{
+    "token":"TOKEN HERE",
+    "prefix":"*",
+    "MONGO_URI":"MONGO PATH HERE"
+}
