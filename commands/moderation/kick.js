@@ -5,10 +5,10 @@ const Guild = require('../../models/guild');
 const config = require('../../config.json')
 
 module.exports = {
-    name: 'ban',
+    name: 'kick',
     category: 'moderation',
-    description: 'Bans the mentioned user from your server.',
-    usage: `ban <@user> [reason]`,
+    description: 'Kicks the mentioned user from your server.',
+    usage: `kick <@user> [reason]`,
     run: async (client, message, args) => {
         message.delete();
 
@@ -36,17 +36,17 @@ module.exports = {
 
         const logChannel = message.guild.channels.cache.get(guildDB.logChannelID);
 
-        if (!message.member.hasPermission('BAN_MEMBERS'))
+        if (!message.member.hasPermission('KICK_MEMBERS'))
             return message.channel.send('You do not have permission to use this command.').then(m => m.delete({timeout: 5000}));
 
         if (!member)
             return message.channel.send('I cannot find the specified member. Please mention a member in this Discord server.').then(m => m.delete({timeout: 5000}));
 
-        if (!member.bannable)
-            return message.channel.send('This member is not bannable.').then(m => m.delete({timeout: 5000}));
+        if (!member.kickable)
+            return message.channel.send('This member is not kickable.').then(m => m.delete({timeout: 5000}));
 
         if (message.member.roles.highest.position < member.roles.highest.position)
-            return message.channel.send('You cannot ban someone with a higher role than you.').then(m => m.delete({timeout: 5000}));
+            return message.channel.send('You cannot kick someone with a higher role than you.').then(m => m.delete({timeout: 5000}));
 
         User.findOne({
             guildID: message.guild.id,
@@ -61,8 +61,8 @@ module.exports = {
                     userID: member.id,
                     muteCount: 0,
                     warnCount: 0,
-                    kickCount: 0,
-                    banCount: 1
+                    kickCount: 1,
+                    banCount: 0
                 });
 
                 await newUser.save()
@@ -70,7 +70,7 @@ module.exports = {
                 .catch(err => console.error(err));
             } else {
                 user.updateOne({
-                    banCount: user.banCount + 1
+                    kickCount: user.kickCount + 1
                 })
                 .then(result => console.log(result))
                 .catch(err => console.error(err));
@@ -80,23 +80,21 @@ module.exports = {
         let reason = 'No reason specified';
 
         if (args.length > 1) reason = args.slice(1).join(' ');
-
-        member.send(`🔨You were \`banned\` from **${message.guild.name}** \n**Reason**: ${reason}.`);
-        member.ban({ reason: reason });
-        message.channel.send(`**${member}** was banned!`);
+        member.kick(reason);
+        message.channel.send(`${member} was **kicked**!`);
         if (!logChannel) {
-            return 
+            return
         } else {
             const embed = new MessageEmbed()
-                .setColor('#ff0000')
-                .setTitle('User Banned')
-                .setThumbnail(member.user.avatarURL({ dynamic: true }))
+                .setColor(15158332)
+                .setTitle('User Kicked')
+                .setThumbnail(member.user.avatarURL())
                 .addField('Username', member.user.username)
                 .addField('User ID', member.id)
-                .addField('Banned by', message.author)
+                .addField('Kicked by', message.author)
                 .addField('Reason', reason);
 
             return logChannel.send(embed);
         };
     }
-}
+};
